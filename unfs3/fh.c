@@ -243,17 +243,19 @@ unfs3_fh_t *fh_extend(nfs_fh3 nfh, uint32 dev, uint32 ino, uint32 gen)
 {
     static unfs3_fh_t new;
     unfs3_fh_t *fh = (void *) nfh.data.data_val;
+    char *path;
 
     memcpy(&new, fh, fh_len(fh));
 
-    if (new.len == 0) {
-	char *path;
-	path = export_point_from_fsid(new.dev);
-	if (path != NULL) {
-	    /* Our FH to extend refers to a removable device export
-	       point, which lacks .inos. We need to construct a real
-	       FH to extend, which can be done by passing rqstp=NULL
-	       to fh_comp_raw. */
+    path = export_point_from_fsid(new.dev);
+    if (path != NULL) {
+	/* The FH refers to a removable device export point, or an object
+	   below it. Our returned FH should have the static fsid as well. */
+	dev = new.dev;
+	if (new.len == 0) {
+	    /* The FH refers to the export point itself, and lacks .inos. We
+	       need to construct a real FH to extend, which can be done by
+	       passing rqstp=NULL to fh_comp_raw. */
 	    new = fh_comp_raw(path, NULL, FH_ANY);
 	    if (!fh_valid(new))
 		return NULL;
