@@ -98,13 +98,14 @@ static void parse_options(int argc, char **argv)
     while (opt != -1) {
 	opt = getopt(argc, argv, optstring);
 	switch (opt) {
-	    case 'u':
-		opt_nfs_port = 0;
-		opt_mount_port = 0;
+#ifdef WANT_CLUSTER
+	    case 'c':
+		opt_cluster = TRUE;
 		break;
-	    case 'w':
-		opt_expire_writers = TRUE;
+	    case 'C':
+		opt_cluster_path = optarg;
 		break;
+#endif
 	    case 'd':
 		printf(UNFS_NAME);
 		opt_detach = FALSE;
@@ -115,43 +116,6 @@ static void parse_options(int argc, char **argv)
 		    exit(1);
 		}
 		opt_exports = optarg;
-		break;
-#ifdef WANT_CLUSTER
-	    case 'c':
-		opt_cluster = TRUE;
-		break;
-	    case 'C':
-		opt_cluster_path = optarg;
-		break;
-#endif
-	    case 'n':
-		opt_nfs_port = strtol(optarg, NULL, 10);
-		if (opt_nfs_port == 0) {
-		    fprintf(stderr, "Invalid port\n");
-		    exit(1);
-		}
-		break;
-	    case 'm':
-		opt_mount_port = strtol(optarg, NULL, 10);
-		if (opt_mount_port == 0) {
-		    fprintf(stderr, "Invalid port\n");
-		    exit(1);
-		}
-		break;
-	    case 't':
-		opt_tcponly = TRUE;
-		break;
-	    case 'p':
-		opt_portmapper = FALSE;
-		break;
-	    case 's':
-		opt_singleuser = TRUE;
-		if (getuid() == 0) {
-		    putmsg(LOG_WARNING,
-			   "Warning: running as root with -s is dangerous");
-		    putmsg(LOG_WARNING,
-			   "All clients will have root access to all exported files!");
-		}
 		break;
 	    case 'h':
 		printf(UNFS_NAME);
@@ -172,6 +136,42 @@ static void parse_options(int argc, char **argv)
 		printf("\t-p          do not register with the portmapper\n");
 		printf("\t-s          single user mode\n");
 		exit(0);
+		break;
+	    case 'm':
+		opt_mount_port = strtol(optarg, NULL, 10);
+		if (opt_mount_port == 0) {
+		    fprintf(stderr, "Invalid port\n");
+		    exit(1);
+		}
+		break;
+	    case 'n':
+		opt_nfs_port = strtol(optarg, NULL, 10);
+		if (opt_nfs_port == 0) {
+		    fprintf(stderr, "Invalid port\n");
+		    exit(1);
+		}
+		break;
+	    case 'p':
+		opt_portmapper = FALSE;
+		break;
+	    case 's':
+		opt_singleuser = TRUE;
+		if (getuid() == 0) {
+		    putmsg(LOG_WARNING,
+			   "Warning: running as root with -s is dangerous");
+		    putmsg(LOG_WARNING,
+			   "All clients will have root access to all exported files!");
+		}
+		break;
+	    case 't':
+		opt_tcponly = TRUE;
+		break;
+	    case 'u':
+		opt_nfs_port = 0;
+		opt_mount_port = 0;
+		break;
+	    case 'w':
+		opt_expire_writers = TRUE;
 		break;
 	    case '?':
 		exit(1);
