@@ -98,7 +98,7 @@ GETATTR3res *nfsproc3_getattr_3_svc(GETATTR3args * argp,
     post_op_attr post;
 
     PREP(path, argp->object);
-    post = get_post_cached();
+    post = get_post_cached(rqstp);
 
     result.status = NFS3_OK;
     result.GETATTR3res_u.resok.obj_attributes =
@@ -141,7 +141,7 @@ SETATTR3res *nfsproc3_setattr_3_svc(SETATTR3args * argp,
 
     /* overlaps with resfail */
     result.SETATTR3res_u.resok.obj_wcc.before = pre;
-    result.SETATTR3res_u.resok.obj_wcc.after = get_post_stat(path);
+    result.SETATTR3res_u.resok.obj_wcc.after = get_post_stat(path, rqstp);
 
     return &result;
 }
@@ -173,7 +173,8 @@ LOOKUP3res *nfsproc3_lookup_3_svc(LOOKUP3args * argp, struct svc_req * rqstp)
 	    if (fh) {
 		result.LOOKUP3res_u.resok.object.data.data_len = fh_len(fh);
 		result.LOOKUP3res_u.resok.object.data.data_val = (char *) fh;
-		result.LOOKUP3res_u.resok.obj_attributes = get_post_buf(buf);
+		result.LOOKUP3res_u.resok.obj_attributes =
+		    get_post_buf(buf, rqstp);
 	    } else {
 		/* path was too long */
 		result.status = NFS3ERR_NAMETOOLONG;
@@ -182,7 +183,7 @@ LOOKUP3res *nfsproc3_lookup_3_svc(LOOKUP3args * argp, struct svc_req * rqstp)
     }
 
     /* overlaps with resfail */
-    result.LOOKUP3res_u.resok.dir_attributes = get_post_stat(path);
+    result.LOOKUP3res_u.resok.dir_attributes = get_post_stat(path, rqstp);
 
     return &result;
 }
@@ -196,7 +197,7 @@ ACCESS3res *nfsproc3_access_3_svc(ACCESS3args * argp, struct svc_req * rqstp)
     int access = 0;
 
     PREP(path, argp->object);
-    post = get_post_cached();
+    post = get_post_cached(rqstp);
     mode = post.post_op_attr_u.attributes.mode;
 
     /* owner permissions */
@@ -269,7 +270,8 @@ READLINK3res *nfsproc3_readlink_3_svc(READLINK3args * argp,
     }
 
     /* overlaps with resfail */
-    result.READLINK3res_u.resok.symlink_attributes = get_post_stat(path);
+    result.READLINK3res_u.resok.symlink_attributes =
+	get_post_stat(path, rqstp);
 
     return &result;
 }
@@ -336,7 +338,7 @@ READ3res *nfsproc3_read_3_svc(READ3args * argp, struct svc_req * rqstp)
     }
 
     /* overlaps with resfail */
-    result.READ3res_u.resok.file_attributes = get_post_stat(path);
+    result.READ3res_u.resok.file_attributes = get_post_stat(path, rqstp);
 
     return &result;
 }
@@ -389,7 +391,7 @@ WRITE3res *nfsproc3_write_3_svc(WRITE3args * argp, struct svc_req * rqstp)
 
     /* overlaps with resfail */
     result.WRITE3res_u.resok.file_wcc.before = get_pre_cached();
-    result.WRITE3res_u.resok.file_wcc.after = get_post_stat(path);
+    result.WRITE3res_u.resok.file_wcc.after = get_post_stat(path, rqstp);
 
     return &result;
 }
@@ -438,7 +440,7 @@ CREATE3res *nfsproc3_create_3_svc(CREATE3args * argp, struct svc_req * rqstp)
 			fh_extend_post(argp->where.dir, buf.st_dev,
 				       buf.st_ino, gen);
 		    result.CREATE3res_u.resok.obj_attributes =
-			get_post_buf(buf);
+			get_post_buf(buf, rqstp);
 		}
 	    } else
 		/* creation via open() failed */
@@ -450,7 +452,7 @@ CREATE3res *nfsproc3_create_3_svc(CREATE3args * argp, struct svc_req * rqstp)
 
     /* overlaps with resfail */
     result.CREATE3res_u.resok.dir_wcc.before = get_pre_cached();
-    result.CREATE3res_u.resok.dir_wcc.after = get_post_stat(path);
+    result.CREATE3res_u.resok.dir_wcc.after = get_post_stat(path, rqstp);
 
     return &result;
 }
@@ -479,11 +481,11 @@ MKDIR3res *nfsproc3_mkdir_3_svc(MKDIR3args * argp, struct svc_req * rqstp)
 	else {
 	    result.MKDIR3res_u.resok.obj =
 		fh_extend_type(argp->where.dir, obj, S_IFDIR);
-	    result.MKDIR3res_u.resok.obj_attributes = get_post_cached();
+	    result.MKDIR3res_u.resok.obj_attributes = get_post_cached(rqstp);
 	}
     }
 
-    post = get_post_attr(path, argp->where.dir);
+    post = get_post_attr(path, argp->where.dir, rqstp);
 
     /* overlaps with resfail */
     result.MKDIR3res_u.resok.dir_wcc.before = pre;
@@ -529,11 +531,12 @@ SYMLINK3res *nfsproc3_symlink_3_svc(SYMLINK3args * argp,
 	else {
 	    result.SYMLINK3res_u.resok.obj =
 		fh_extend_type(argp->where.dir, obj, S_IFLNK);
-	    result.SYMLINK3res_u.resok.obj_attributes = get_post_cached();
+	    result.SYMLINK3res_u.resok.obj_attributes =
+		get_post_cached(rqstp);
 	}
     }
 
-    post = get_post_attr(path, argp->where.dir);
+    post = get_post_attr(path, argp->where.dir, rqstp);
 
     /* overlaps with resfail */
     result.SYMLINK3res_u.resok.dir_wcc.before = pre;
@@ -633,11 +636,11 @@ MKNOD3res *nfsproc3_mknod_3_svc(MKNOD3args * argp, struct svc_req * rqstp)
 	    result.MKNOD3res_u.resok.obj =
 		fh_extend_type(argp->where.dir, obj,
 			       type_to_mode(argp->what.type));
-	    result.MKNOD3res_u.resok.obj_attributes = get_post_cached();
+	    result.MKNOD3res_u.resok.obj_attributes = get_post_cached(rqstp);
 	}
     }
 
-    post = get_post_attr(path, argp->where.dir);
+    post = get_post_attr(path, argp->where.dir, rqstp);
 
     /* overlaps with resfail */
     result.MKNOD3res_u.resok.dir_wcc.before = pre;
@@ -667,7 +670,7 @@ REMOVE3res *nfsproc3_remove_3_svc(REMOVE3args * argp, struct svc_req * rqstp)
 
     /* overlaps with resfail */
     result.REMOVE3res_u.resok.dir_wcc.before = get_pre_cached();
-    result.REMOVE3res_u.resok.dir_wcc.after = get_post_stat(path);
+    result.REMOVE3res_u.resok.dir_wcc.after = get_post_stat(path, rqstp);
 
     return &result;
 }
@@ -693,7 +696,7 @@ RMDIR3res *nfsproc3_rmdir_3_svc(RMDIR3args * argp, struct svc_req * rqstp)
 
     /* overlaps with resfail */
     result.RMDIR3res_u.resok.dir_wcc.before = get_pre_cached();
-    result.RMDIR3res_u.resok.dir_wcc.after = get_post_stat(path);
+    result.RMDIR3res_u.resok.dir_wcc.after = get_post_stat(path, rqstp);
 
     return &result;
 }
@@ -732,13 +735,13 @@ RENAME3res *nfsproc3_rename_3_svc(RENAME3args * argp, struct svc_req * rqstp)
 	}
     }
 
-    post = get_post_attr(from, argp->from.dir);
+    post = get_post_attr(from, argp->from.dir, rqstp);
 
     /* overlaps with resfail */
     result.RENAME3res_u.resok.fromdir_wcc.before = pre;
     result.RENAME3res_u.resok.fromdir_wcc.after = post;
     result.RENAME3res_u.resok.todir_wcc.before = get_pre_cached();
-    result.RENAME3res_u.resok.todir_wcc.after = get_post_stat(to);
+    result.RENAME3res_u.resok.todir_wcc.after = get_post_stat(to, rqstp);
 
     return &result;
 }
@@ -771,10 +774,10 @@ LINK3res *nfsproc3_link_3_svc(LINK3args * argp, struct svc_req * rqstp)
     } else if (!old)
 	result.status = NFS3ERR_STALE;
 
-    post = get_post_attr(path, argp->link.dir);
+    post = get_post_attr(path, argp->link.dir, rqstp);
 
     /* overlaps with resfail */
-    result.LINK3res_u.resok.file_attributes = get_post_stat(old);
+    result.LINK3res_u.resok.file_attributes = get_post_stat(old, rqstp);
     result.LINK3res_u.resok.linkdir_wcc.before = pre;
     result.LINK3res_u.resok.linkdir_wcc.after = post;
 
@@ -790,7 +793,7 @@ READDIR3res *nfsproc3_readdir_3_svc(READDIR3args * argp,
     PREP(path, argp->dir);
 
     result = read_dir(path, argp->cookie, argp->cookieverf, argp->count);
-    result.READDIR3res_u.resok.dir_attributes = get_post_stat(path);
+    result.READDIR3res_u.resok.dir_attributes = get_post_stat(path, rqstp);
 
     return &result;
 }
@@ -821,7 +824,7 @@ FSSTAT3res *nfsproc3_fsstat_3_svc(FSSTAT3args * argp, struct svc_req * rqstp)
     PREP(path, argp->fsroot);
 
     /* overlaps with resfail */
-    result.FSSTAT3res_u.resok.obj_attributes = get_post_cached();
+    result.FSSTAT3res_u.resok.obj_attributes = get_post_cached(rqstp);
 
     res = statvfs(path, &buf);
     if (res == -1) {
@@ -850,7 +853,7 @@ FSINFO3res *nfsproc3_fsinfo_3_svc(FSINFO3args * argp, struct svc_req * rqstp)
 
     PREP(path, argp->fsroot);
 
-    result.FSINFO3res_u.resok.obj_attributes = get_post_cached();
+    result.FSINFO3res_u.resok.obj_attributes = get_post_cached(rqstp);
 
     result.status = NFS3_OK;
     result.FSINFO3res_u.resok.rtmax = 8192;
@@ -877,7 +880,7 @@ PATHCONF3res *nfsproc3_pathconf_3_svc(PATHCONF3args * argp,
 
     PREP(path, argp->object);
 
-    result.PATHCONF3res_u.resok.obj_attributes = get_post_cached();
+    result.PATHCONF3res_u.resok.obj_attributes = get_post_cached(rqstp);
 
     result.status = NFS3_OK;
     result.PATHCONF3res_u.resok.linkmax = 0xFFFFFFFF;
@@ -910,7 +913,7 @@ COMMIT3res *nfsproc3_commit_3_svc(COMMIT3args * argp, struct svc_req * rqstp)
 
     /* overlaps with resfail */
     result.COMMIT3res_u.resfail.file_wcc.before = get_pre_cached();
-    result.COMMIT3res_u.resfail.file_wcc.after = get_post_stat(path);
+    result.COMMIT3res_u.resfail.file_wcc.after = get_post_stat(path, rqstp);
 
     return &result;
 }
