@@ -295,7 +295,7 @@ char *fh_decomp(nfs_fh3 fh)
 	result = fh_decomp_raw(obj);
 
 	/* if still not found, do full recursive search) */
-	if (!result && opt_fullsearch)
+	if (!result && opt_brute_force)
 	    result = locate_file(obj->dev, obj->ino);
 
 	if (result)

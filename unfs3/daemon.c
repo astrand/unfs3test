@@ -58,7 +58,7 @@ int opt_tcponly = FALSE;
 unsigned int opt_nfs_port = NFS_PORT;	/* 0 means RPC_ANYSOCK */
 unsigned int opt_mount_port = NFS_PORT;
 int opt_singleuser = FALSE;
-int opt_fullsearch = FALSE;
+int opt_brute_force = FALSE;
 
 /* Register with portmapper? */
 int opt_portmapper = TRUE;
@@ -119,7 +119,7 @@ static void parse_options(int argc, char **argv)
 		opt_exports = optarg;
 		break;
 	    case 'f':
-		opt_fullsearch = TRUE;
+		opt_brute_force = TRUE;
 		break;
 	    case 'h':
 		printf(UNFS_NAME);
