@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "nfs.h"
 #include "fh.h"
@@ -228,13 +229,17 @@ char *fh_decomp(nfs_fh3 fh)
 		st_cache.st_size = 0;
 		st_cache.st_blksize = 0;
 		st_cache.st_blocks = 0;
-		st_cache.st_atime = 0;
-		st_cache.st_mtime = 0;
-		st_cache.st_ctime = 0;
 	    }
 
 	    st_cache.st_dev = obj->dev;
 	    st_cache.st_ino = 0x1;
+	    /* The media (and thus the directory content) might change
+	       at any time. Return current time, to prevent client
+	       from caching old directory data */
+	    st_cache.st_atime = time(NULL);
+	    st_cache.st_mtime = st_cache.st_atime;
+	    st_cache.st_ctime = st_cache.st_atime;
+
 	    return result;
 	}
     }
