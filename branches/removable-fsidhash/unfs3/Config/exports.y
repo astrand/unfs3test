@@ -63,8 +63,40 @@ static struct groupnode ne_host;
 /* error status of last parse */
 int e_error = FALSE;
 
-static uint64 get_free_fsid(const char *path);
-static uint32 fnv1a_32(const char *str);
+/*
+ * The FNV1a-32 hash algorithm
+ * (http://www.isthe.com/chongo/tech/comp/fnv/)
+ */
+static uint32 fnv1a_32(const char *str)
+{
+    static const uint32 fnv_32_prime = 0x01000193;
+    uint32 hval = fnv_32_prime;
+    
+    while (*str) {
+	hval ^= *str++;
+	hval *= fnv_32_prime;
+    }
+    return hval;
+}
+
+/*
+ * get static fsid, for use with removable media export points
+ */
+static uint64 get_free_fsid(const char *path)
+{
+    uint64 hval;
+
+    /* fsid is 64 bits, but in unfsd, we treat st_dev and fsid as
+       equal, and "dev" in our filehandles are only 32 bits. So, we
+       leave the upper 32 bits all zero. The 32:th bit is set to one
+       on all special filehandles. The last 31 bits are hashed from
+       the export point path. */
+
+    hval = fnv1a_32(path);
+    hval |= 0x10000000UL;
+    return hval;
+}
+
 
 /*
  * clear current host
@@ -643,39 +675,6 @@ char *export_point_from_fsid(uint64 fsid)
     return NULL;
 }
 
-/*
- * The FNV1a-32 hash algorithm
- * (http://www.isthe.com/chongo/tech/comp/fnv/)
- */
-static uint32 fnv1a_32(const char *str)
-{
-    static const uint32 fnv_32_prime = 0x01000193;
-    uint32 hval = fnv_32_prime;
-    
-    while (*str) {
-	hval ^= *str++;
-	hval *= fnv_32_prime;
-    }
-    return hval;
-}
-
-/*
- * get static fsid, for use with removable media export points
- */
-static uint64 get_free_fsid(const char *path)
-{
-    uint64 hval;
-
-    /* fsid is 64 bits, but in unfsd, we treat st_dev and fsid as
-       equal, and "dev" in our filehandles are only 32 bits. So, we
-       leave the upper 32 bits all zero. The 32:th bit is set to one
-       on all special filehandles. The last 31 bits are hashed from
-       the export point path. */
-
-    hval = fnv1a_32(path);
-    hval |= 0x10000000UL;
-    return hval;
-}
 
 /*
  * check whether export options of a path match with last set of options
