@@ -138,6 +138,16 @@ directories. When this option is present, the performance hit caused by
 clustering extensions only applies to the listed directories and their
 subdirectories.
 .TP
+.B \-b
+Enable brute force file searching. Normally, when you rename a file
+across several directories on an NFS volume, the filehandle for that
+file becomes stale. When this option is enabled,
+.B unfsd
+will attempt a recursive search on the relevant server filesystem to
+find the file referenced by the filehandle. This can have a huge
+performance impact as this will also happen for files that were
+really deleted (by another NFS client) instead of moved, and cannot be found.
+.TP
 .B \-d
 Debug mode. When this option is present,
 .B unfsd
@@ -155,12 +165,6 @@ user issuing the request, if the file is owned by the user running
 .B unfsd. 
 Otherwise, the reported ownership will be uid 0 (root). The same
 principle applies for the group ownership.
-.TP
-.B \-f
-When a file handle refers to a file which no longer exists in the
-directory the file handle refers to, try to locate it by using a full
-recursive search. This will prevent stale file handles in case the
-file has been moved to another directory. 
 .SH SIGNALS
 .TP
 .BR "SIGTERM " "and " SIGINT
