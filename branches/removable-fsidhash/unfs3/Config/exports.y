@@ -36,6 +36,7 @@ typedef struct {
 	char		orig[NFS_MAXPATHLEN];
 	int		options;
         unsigned char   password[PASSWORD_MAXLEN+1];
+        uint32          password_hash;
 	struct in_addr	addr;
 	struct in_addr	mask;
 	struct e_host	*next;
@@ -63,6 +64,7 @@ static struct groupnode ne_host;
 int e_error = FALSE;
 
 static uint64 get_free_fsid(const char *path);
+static uint32 fnv1a_32(const char *str);
 
 /*
  * clear current host
@@ -298,6 +300,8 @@ static void add_option_with_value(const char *opt, const char *val)
 	}
 	strncpy(cur_host.password, val, sizeof(password));
 	cur_host.password[PASSWORD_MAXLEN] = '\0';
+	/* Calculate hash */
+	cur_host.password_hash = fnv1a_32(cur_host.password);
     }
 }
 
@@ -536,7 +540,7 @@ void exports_parse(void)
  * find a given host inside a host list, return options
  */
 static int find_host(struct in_addr remote, e_item *item,
-		     char **password)
+		     char **password, uint32 *password_hash)
 {
 	e_host *host;
 
@@ -545,6 +549,8 @@ static int find_host(struct in_addr remote, e_item *item,
 		if ((remote.s_addr & host->mask.s_addr) == host->addr.s_addr) {
 			if (password != NULL) 
 				*password = host->password;
+			if (password_hash != NULL)
+     			        *password_hash = host->password_hash;
 			return host->options;
 		}
 		host = (e_host *) host->next;
@@ -554,6 +560,7 @@ static int find_host(struct in_addr remote, e_item *item,
 
 /* options cache */
 int exports_opts = -1;
+uint32 export_password_hash = 0;
 
 /*
  * given a path, return client's effective options
@@ -582,7 +589,7 @@ int exports_options(const char *path, struct svc_req *rqstp,
 		/* longest matching prefix wins */
 		if (strlen(list->path) > last_len    &&
 		    strstr(path, list->path) == path) {
-			cur_opts = find_host(remote, list, password);
+			cur_opts = find_host(remote, list, password, &export_password_hash);
 			if (fsid != NULL)
 			    *fsid = list->fsid;
 			if (cur_opts != -1) {
@@ -620,7 +627,6 @@ int export_point(const char *path)
 /*
  * return exported path from static fsid
  */
-
 char *export_point_from_fsid(uint64 fsid)
 {
     e_item *list;
@@ -637,33 +643,39 @@ char *export_point_from_fsid(uint64 fsid)
     return NULL;
 }
 
+/*
+ * The FNV1a-32 hash algorithm
+ * (http://www.isthe.com/chongo/tech/comp/fnv/)
+ */
+static uint32 fnv1a_32(const char *str)
+{
+    static const uint32 fnv_32_prime = 0x01000193;
+    uint32 hval = fnv_32_prime;
+    
+    while (*str) {
+	hval ^= *str++;
+	hval *= fnv_32_prime;
+    }
+    return hval;
+}
 
 /*
  * get static fsid, for use with removable media export points
  */
-
 static uint64 get_free_fsid(const char *path)
 {
-    static const unsigned long fnv_32_prime = 0x01000193;
-    uint64 hval = fnv_32_prime;
+    uint64 hval;
 
     /* fsid is 64 bits, but in unfsd, we treat st_dev and fsid as
        equal, and "dev" in our filehandles are only 32 bits. So, we
        leave the upper 32 bits all zero. The 32:th bit is set to one
        on all special filehandles. The last 31 bits are hashed from
-       the export point path, using the FNV1a-32 algorithm
-       (http://www.isthe.com/chongo/tech/comp/fnv/).
-    */
-    while (*path) {
-	hval ^= *path++;
-	hval *= fnv_32_prime;
-    }
+       the export point path. */
 
-    hval &= 0xffffffffUL;
+    hval = fnv1a_32(path);
     hval |= 0x10000000UL;
     return hval;
 }
-
 
 /*
  * check whether export options of a path match with last set of options
