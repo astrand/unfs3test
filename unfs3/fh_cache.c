@@ -202,6 +202,7 @@ char *fh_decomp(nfs_fh3 fh)
 {
     char *result;
     unfs3_fh_t *obj = (void *) fh.data.data_val;
+    int use_locate = 1;
 
     if (!nfh_valid(fh)) {
 	st_cache_valid = FALSE;
@@ -235,6 +236,10 @@ char *fh_decomp(nfs_fh3 fh)
 	    st_cache.st_dev = obj->dev;
 	    st_cache.st_ino = 0x1;
 	    return result;
+	} else {
+	    /* Some other object on removable media. Do not use brute
+	       force locate, in case not found. */
+	    use_locate = 0;
 	}
     }
 
@@ -247,7 +252,7 @@ char *fh_decomp(nfs_fh3 fh)
 	result = fh_decomp_raw(obj);
 
 	/* if still not found, do full recursive search) */
-	if (!result)
+	if (!result && use_locate)
 	    result = locate_file(obj->dev, obj->ino);
 
 	if (result)
