@@ -58,6 +58,7 @@ int opt_tcponly = FALSE;
 unsigned int opt_nfs_port = NFS_PORT;	/* 0 means RPC_ANYSOCK */
 unsigned int opt_mount_port = NFS_PORT;
 int opt_singleuser = FALSE;
+int opt_fullsearch = FALSE;
 
 /* Register with portmapper? */
 int opt_portmapper = TRUE;
@@ -93,7 +94,7 @@ struct in_addr get_remote(struct svc_req *rqstp)
 static void parse_options(int argc, char **argv)
 {
     int opt = 0;
-    char *optstring = "cC:de:hm:n:pstuw";
+    char *optstring = "cC:def:hm:n:pstuw";
 
     while (opt != -1) {
 	opt = getopt(argc, argv, optstring);
@@ -117,6 +118,9 @@ static void parse_options(int argc, char **argv)
 		}
 		opt_exports = optarg;
 		break;
+	    case 'f':
+		opt_fullsearch = TRUE;
+		break;
 	    case 'h':
 		printf(UNFS_NAME);
 		printf("Usage: %s [options]\n", argv[0]);
@@ -135,6 +139,8 @@ static void parse_options(int argc, char **argv)
 		    ("\t-t          TCP only, do not listen on UDP ports\n");
 		printf("\t-p          do not register with the portmapper\n");
 		printf("\t-s          single user mode\n");
+		printf
+		    ("\t-f          do full recursive search when file not found\n");
 		exit(0);
 		break;
 	    case 'm':

@@ -155,6 +155,12 @@ user issuing the request, if the file is owned by the user running
 .B unfsd. 
 Otherwise, the reported ownership will be uid 0 (root). The same
 principle applies for the group ownership.
+.TP
+.B \-f
+When a file handle refers to a file which no longer exists in the
+directory the file handle refers to, try to locate it by using a full
+recursive search. This will prevent stale file handles in case the
+file has been moved to another directory. 
 .SH SIGNALS
 .TP
 .BR "SIGTERM " "and " SIGINT
