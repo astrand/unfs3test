@@ -251,6 +251,10 @@ unfs3_fh_t *fh_extend(nfs_fh3 nfh, uint32 dev, uint32 ino, uint32 gen)
     new.inos[new.len] = FH_HASH(ino);
     new.len++;
 
+    /* Scramble FH */
+    new.dev ^= export_password_hash;
+    new.ino ^= export_password_hash;
+
     return &new;
 }
 

@@ -208,6 +208,10 @@ char *fh_decomp(nfs_fh3 fh)
 	return NULL;
     }
 
+    /* Descramble FH */
+    obj->dev ^= export_password_hash;
+    obj->ino ^= export_password_hash;
+
     /* Does the fsid match some static fsid? */
     if ((result = export_point_from_fsid(obj->dev)) != NULL) {
 	if (obj->ino == 0x1) {
@@ -262,6 +266,10 @@ unfs3_fh_t fh_comp(const char *path, struct svc_req * rqstp, int need_dir)
     if (fh_valid(res))
 	/* add to cache for later use */
 	fh_cache_add(res.dev, res.ino, path);
+
+    /* Scramble FH. Note: The cache stores the unscrambled FHs */
+    res.dev ^= export_password_hash;
+    res.ino ^= export_password_hash;
 
     return res;
 }
