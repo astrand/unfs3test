@@ -147,8 +147,10 @@ static void parse_options(int argc, char **argv)
 	    case 's':
 		opt_singleuser = TRUE;
 		if (getuid() == 0) {
-		    putmsg(LOG_WARNING, "Warning: running as root with -s is dangerous");
-		    putmsg(LOG_WARNING, "All clients will have root access to all exported files!");
+		    putmsg(LOG_WARNING,
+			   "Warning: running as root with -s is dangerous");
+		    putmsg(LOG_WARNING,
+			   "All clients will have root access to all exported files!");
 		}
 		break;
 	    case 'h':
