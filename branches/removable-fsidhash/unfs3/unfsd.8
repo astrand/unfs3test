@@ -143,6 +143,18 @@ Debug mode. When this option is present,
 .B unfsd
 will not fork into the background at startup, and all messages that
 would normally go to the system log go to stdout instead.
+.TP
+.B \-s <user-uid>,<nobody-uid>,<user-gid>,<nobody-gid>
+Single user mode; activate basic uid translation. This option if
+useful when running
+.B unfsd
+as an ordinary user, and when the server and client are using
+different user and group ids. The ids specified should be relative to
+the client. All files owned by the user running unfsd will look like
+being owned by <user-uid>. All other files will have <nobody-uid> as
+owner. The same principle applies for groups. Note: When using this
+option, no switching of the effective user and group id will take
+place, even if running as root. 
 .SH SIGNALS
 .TP
 .BR "SIGTERM " "and " SIGINT

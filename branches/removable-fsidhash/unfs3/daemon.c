@@ -58,6 +58,12 @@ int opt_tcponly = FALSE;
 unsigned int opt_nfs_port = NFS_PORT;	/* 0 means RPC_ANYSOCK */
 unsigned int opt_mount_port = NFS_PORT;
 
+int opt_singleuser = FALSE;
+unsigned int opt_translated_user_uid;
+unsigned int opt_translated_nobody_uid;
+unsigned int opt_translated_user_gid;
+unsigned int opt_translated_nobody_gid;
+
 /* Register with portmapper? */
 int opt_portmapper = TRUE;
 
@@ -92,8 +98,9 @@ struct in_addr get_remote(struct svc_req *rqstp)
 static void parse_options(int argc, char **argv)
 {
     int opt = 0;
+    char *p;
 
-    char *optstring = "dhwue:cC:n:m:tp";
+    char *optstring = "dhwue:cC:n:m:tps:";
 
     while (opt != -1) {
 	opt = getopt(argc, argv, optstring);
@@ -143,6 +150,35 @@ static void parse_options(int argc, char **argv)
 		break;
 	    case 'p':
 		opt_portmapper = FALSE;
+		break;
+	    case 's':
+		opt_singleuser = TRUE;
+		opt_translated_user_uid = strtol(optarg, &p, 10);
+		if (*p != ',') {
+		    fprintf(stderr, "Error: invalid -s uid/gid list\n");
+		    exit(1);
+		}
+		p++;
+		optarg = p;
+		opt_translated_nobody_uid = strtol(optarg, &p, 10);
+		if (*p != ',') {
+		    fprintf(stderr, "Error: invalid -s uid/gid list\n");
+		    exit(1);
+		}
+		p++;
+		optarg = p;
+		opt_translated_user_gid = strtol(optarg, &p, 10);
+		if (*p != ',') {
+		    fprintf(stderr, "Error: invalid -s uid/gid list\n");
+		    exit(1);
+		}
+		p++;
+		optarg = p;
+		opt_translated_nobody_gid = strtol(optarg, &p, 10);
+		if (*p != '\0') {
+		    fprintf(stderr, "Error: invalid -s uid/gid list\n");
+		    exit(1);
+		}
 		break;
 	    case 'h':
 		printf(UNFS_NAME);

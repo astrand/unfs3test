@@ -21,6 +21,7 @@
 #include "error.h"
 #include "fh.h"
 #include "fh_cache.h"
+#include "daemon.h"
 
 /*
  * check whether stat_cache is for a regular file
@@ -133,8 +134,23 @@ post_op_attr get_post_buf(struct stat buf)
 
     result.post_op_attr_u.attributes.mode = buf.st_mode & 0xFFFF;
     result.post_op_attr_u.attributes.nlink = buf.st_nlink;
-    result.post_op_attr_u.attributes.uid = buf.st_uid;
-    result.post_op_attr_u.attributes.gid = buf.st_gid;
+
+    /* If -s, translate uids */
+    if (opt_singleuser) {
+	if (buf.st_uid == getuid())
+	    result.post_op_attr_u.attributes.uid = opt_translated_user_uid;
+	else
+	    result.post_op_attr_u.attributes.uid = opt_translated_nobody_uid;
+	if (buf.st_gid == getgid())
+	    result.post_op_attr_u.attributes.gid = opt_translated_user_gid;
+	else
+	    result.post_op_attr_u.attributes.gid = opt_translated_nobody_gid;
+    } else {
+	/* Normal case */
+	result.post_op_attr_u.attributes.uid = buf.st_uid;
+	result.post_op_attr_u.attributes.gid = buf.st_gid;
+    }
+
     result.post_op_attr_u.attributes.size = buf.st_size;
     result.post_op_attr_u.attributes.used = buf.st_blocks * 512;
     result.post_op_attr_u.attributes.rdev.specdata1 =
