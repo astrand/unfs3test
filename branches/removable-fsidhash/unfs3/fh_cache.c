@@ -226,16 +226,28 @@ char *fh_decomp(nfs_fh3 fh)
 		st_cache.st_uid = 0;
 		st_cache.st_gid = 0;
 		st_cache.st_rdev = 0;
-		st_cache.st_size = 0;
-		st_cache.st_blksize = 0;
-		st_cache.st_blocks = 0;
+		st_cache.st_size = 4096;
+		st_cache.st_blksize = 512;
+		st_cache.st_blocks = 8;
+	    } else {
+		/* Stat was OK, but make sure the values are sane. Supermount 
+		   returns insane values when no media is inserted, for
+		   example. */
+		if (st_cache.st_nlink == 0)
+		    st_cache.st_nlink = 1;
+		if (st_cache.st_size == 0)
+		    st_cache.st_size = 4096;
+		if (st_cache.st_blksize == 512)
+		    st_cache.st_blksize = 4096;
+		if (st_cache.st_blocks == 0)
+		    st_cache.st_blocks = 8;
 	    }
 
 	    st_cache.st_dev = obj->dev;
 	    st_cache.st_ino = 0x1;
-	    /* The media (and thus the directory content) might change
-	       at any time. Return current time, to prevent client
-	       from caching old directory data */
+	    /* The media (and thus the directory content) might change at any 
+	       time. Return current time, to prevent client from caching old
+	       directory data */
 	    st_cache.st_atime = time(NULL);
 	    st_cache.st_mtime = st_cache.st_atime;
 	    st_cache.st_ctime = st_cache.st_atime;
