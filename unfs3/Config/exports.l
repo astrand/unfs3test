@@ -35,7 +35,7 @@ static void copy_text(const char *from, int leng)
 WHITE [ \t]
 NOWHITE [^ \n\t]
 PATH "/"{NOWHITE}*
-ID [a-z][\._a-z0-9]*
+ID [a-z][\.\-_a-z0-9]*
 OPTVAL [^ \n\t,)]*
 
 IPCOMP [0-9]{1,3}
@@ -47,6 +47,7 @@ OLDNET {IP}"/"{IP}
 %%
 
 ^{WHITE}*\n		{ /* eat empty line */ }
+^{WHITE}*		{ /* eat whitespace at beginning of line */ }
 "\\"\n			{ /* eat escaped newline */ }
 ^{WHITE}*"#".*\n	{ /* eat one-line comment */ }
 {WHITE}*"#".*		{ /* eat trailing comment */ }
