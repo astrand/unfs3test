@@ -56,6 +56,7 @@
                           return &result;			\
                       }						\
                       if (fh->pwhash != export_password_hash) { \
+                          memset(&result, 0, sizeof(result));	\
                           result.status = NFS3ERR_STALE;        \
                           return &result;                       \
                       }                                         \
