@@ -178,9 +178,9 @@ static void fd_cache_add(int fd, unfs3_fh_t * ufh, int kind)
 	fd_cache[idx].fd = fd;
 	fd_cache[idx].kind = kind;
 	fd_cache[idx].use = fd_cache_next();
-	fd_cache[idx].dev = ufh->dev;
-	fd_cache[idx].ino = ufh->ino;
-	fd_cache[idx].gen = ufh->gen;
+	fd_cache[idx].dev = ufh->dih.dev;
+	fd_cache[idx].ino = ufh->dih.ino;
+	fd_cache[idx].gen = ufh->dih.gen;
     }
 }
 
@@ -210,8 +210,9 @@ static int idx_by_fh(unfs3_fh_t * ufh, int kind)
 
     for (i = 0; i < FD_ENTRIES; i++)
 	if (fd_cache[i].kind == kind) {
-	    if (fd_cache[i].dev == ufh->dev && fd_cache[i].ino == ufh->ino &&
-		fd_cache[i].gen == ufh->gen) {
+	    if (fd_cache[i].dev == ufh->dih.dev &&
+		fd_cache[i].ino == ufh->dih.ino &&
+		fd_cache[i].gen == ufh->dih.gen) {
 		idx = i;
 		break;
 	    }
@@ -225,11 +226,13 @@ static int idx_by_fh(unfs3_fh_t * ufh, int kind)
  */
 int fd_open(const char *path, nfs_fh3 nfh, int kind)
 {
-    int idx, res, fd;
+    int idx = -1, res, fd;
     struct stat buf;
     unfs3_fh_t *fh = (void *) nfh.data.data_val;
 
-    idx = idx_by_fh(fh, kind);
+    if (!(fh->flags & FHTYPE_ASCII_PATH)) {
+	idx = idx_by_fh(fh, kind);
+    }
 
     if (idx != -1)
 	return fd_cache[idx].fd;
@@ -242,11 +245,15 @@ int fd_open(const char *path, nfs_fh3 nfh, int kind)
 	if (fd == -1)
 	    return -1;
 
+	/* If ascii-path, we're done */
+	if (fh->flags & FHTYPE_ASCII_PATH)
+	    return fd;
+
 	/* check for local fs race */
 	res = fstat(fd, &buf);
 	if ((res == -1) ||
-	    (fh->dev != buf.st_dev || fh->ino != buf.st_ino ||
-	     fh->gen != get_gen(buf, fd, path))) {
+	    (fh->dih.dev != buf.st_dev || fh->dih.ino != buf.st_ino ||
+	     fh->dih.gen != get_gen(buf, fd, path))) {
 	    /* 
 	     * local fs changed meaning of path between
 	     * calling NFS operation doing fh_decomp and
@@ -308,12 +315,14 @@ int fd_sync(nfs_fh3 nfh)
     int idx;
     unfs3_fh_t *fh = (void *) nfh.data.data_val;
 
-    idx = idx_by_fh(fh, FD_WRITE);
-    if (idx != -1)
-	/* delete entry, will fsync() and close() the fd */
-	return fd_cache_del(idx);
-    else
-	return 0;
+    if (!(fh->flags & FHTYPE_ASCII_PATH)) {
+	idx = idx_by_fh(fh, FD_WRITE);
+	if (idx != -1)
+	    /* delete entry, will fsync() and close() the fd */
+	    return fd_cache_del(idx);
+    }
+
+    return 0;
 }
 
 /*

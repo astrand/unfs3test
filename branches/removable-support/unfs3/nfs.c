@@ -93,8 +93,9 @@ GETATTR3res *nfsproc3_getattr_3_svc(GETATTR3args * argp,
     post_op_attr post;
 
     PREP(path, argp->object);
-    post = get_post_cached();
+    post = get_post_cached(); 
 
+    // FIXME: Valgrind reports error when "post" is error_attr(). 
     result.status = NFS3_OK;
     result.GETATTR3res_u.resok.obj_attributes =
 	post.post_op_attr_u.attributes;

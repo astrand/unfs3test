@@ -199,8 +199,9 @@ mountres3 *mountproc_mnt_3_svc(dirpath * argp, struct svc_req * rqstp)
 	result.fhs_status = MNT3ERR_ACCES;
 	return &result;
     }
-
-    fh = fh_comp(buf, FH_DIR);
+    // fh = fh_comp(buf, FH_DIR);
+    // FIXME: Only if removable and export point
+    fh = fh_comp_ascii(buf, FH_DIR);
 
     if (!fh_valid(fh)) {
 	putmsg(LOG_INFO, "%s attempted to mount non-directory",

@@ -206,8 +206,21 @@ char *fh_decomp(nfs_fh3 fh)
 	return NULL;
     }
 
+    if (obj->flags & FHTYPE_ASCII_PATH) {
+	result = fh_get_ascii_path(obj);
+
+	/* Need to fill stat cache */
+	if (lstat(result, &st_cache) == -1) {
+	    /* object does not exist */
+	    st_cache_valid = FALSE;
+	    return NULL;
+	}
+	st_cache_valid = TRUE;
+	return result;
+    }
+
     /* try lookup in cache, increase cache usage counter */
-    result = fh_cache_lookup(obj->dev, obj->ino);
+    result = fh_cache_lookup(obj->dih.dev, obj->dih.ino);
     fh_cache_use++;
 
     if (!result) {
@@ -216,11 +229,11 @@ char *fh_decomp(nfs_fh3 fh)
 
 	/* if still not found, do full recursive search) */
 	if (!result)
-	    result = locate_file(obj->dev, obj->ino);
+	    result = locate_file(obj->dih.dev, obj->dih.ino);
 
 	if (result)
 	    /* add to cache for later use if resolution ok */
-	    result = fh_cache_add(obj->dev, obj->ino, result);
+	    result = fh_cache_add(obj->dih.dev, obj->dih.ino, result);
 	else
 	    /* could not resolve in any way */
 	    st_cache_valid = FALSE;
@@ -240,9 +253,11 @@ unfs3_fh_t fh_comp(const char *path, int need_dir)
     unfs3_fh_t res;
 
     res = fh_comp_raw(path, need_dir);
-    if (fh_valid(res))
+
+    if (fh_valid(res)) {
 	/* add to cache for later use */
-	fh_cache_add(res.dev, res.ino, path);
+	fh_cache_add(res.dih.dev, res.dih.ino, path);
+    }
 
     return res;
 }

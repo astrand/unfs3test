@@ -168,9 +168,11 @@ static post_op_attr get_post_ll(const char *path, uint32 dev, uint32 ino)
     if (res == -1)
 	return error_attr();
 
-    /* protect against local fs race */
-    if (dev != buf.st_dev || ino != buf.st_ino)
-	return error_attr();
+    if (dev && ino) {
+	/* protect against local fs race */
+	if (dev != buf.st_dev || ino != buf.st_ino)
+	    return error_attr();
+    }
 
     return get_post_buf(buf);
 }
@@ -182,7 +184,11 @@ post_op_attr get_post_attr(const char *path, nfs_fh3 nfh)
 {
     unfs3_fh_t *fh = (void *) nfh.data.data_val;
 
-    return get_post_ll(path, fh->dev, fh->ino);
+    if (fh->flags & FHTYPE_ASCII_PATH) {
+	return get_post_ll(path, 0, 0);
+    } else {
+	return get_post_ll(path, fh->dih.dev, fh->dih.ino);
+    }
 }
 
 /*
@@ -263,8 +269,10 @@ static nfsstat3 set_attr_unsafe(const char *path, nfs_fh3 nfh, sattr3 new)
 	return NFS3ERR_STALE;
 
     /* check local fs race */
-    if (buf.st_dev != fh->dev || buf.st_ino != fh->ino)
-	return NFS3ERR_STALE;
+    if (!(fh->flags & FHTYPE_ASCII_PATH)) {
+	if (buf.st_dev != fh->dih.dev || buf.st_ino != fh->dih.ino)
+	    return NFS3ERR_STALE;
+    }
 
     /* set file size */
     if (new.size.set_it == TRUE) {
@@ -341,10 +349,12 @@ nfsstat3 set_attr(const char *path, nfs_fh3 nfh, sattr3 new)
     }
 
     /* check local fs race */
-    if (fh->dev != buf.st_dev || fh->ino != buf.st_ino ||
-	fh->gen != get_gen(buf, fd, path)) {
-	close(fd);
-	return NFS3ERR_STALE;
+    if (!(fh->flags & FHTYPE_ASCII_PATH)) {
+	if (fh->dih.dev != buf.st_dev || fh->dih.ino != buf.st_ino ||
+	    fh->dih.gen != get_gen(buf, fd, path)) {
+	    close(fd);
+	    return NFS3ERR_STALE;
+	}
     }
 
     /* set file size */
