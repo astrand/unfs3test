@@ -182,7 +182,7 @@ unfs3_fh_t fh_comp_raw(const char *path, struct svc_req *rqstp, int need_dir)
     /* special case for removable device export point: return preset fsid and 
        inod 1. */
     if (export_point(path)) {
-	uint64 fsid;
+	uint32 fsid;
 
 	if (exports_options(path, rqstp, NULL, &fsid) == -1) {
 	    /* Shouldn't happen, unless the exports file changed after the
