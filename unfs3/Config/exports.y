@@ -46,7 +46,7 @@ typedef struct {
 	char		path[NFS_MAXPATHLEN];
 	char		orig[NFS_MAXPATHLEN];
 	e_host		*hosts;
-        uint64          fsid; /* export point fsid (for removables) */
+        uint32          fsid; /* export point fsid (for removables) */
 	struct e_item	*next;
 } e_item;
 
@@ -82,16 +82,12 @@ static uint32 fnv1a_32(const char *str)
 /*
  * get static fsid, for use with removable media export points
  */
-static uint64 get_free_fsid(const char *path)
+static uint32 get_free_fsid(const char *path)
 {
-    uint64 hval;
+    uint32 hval;
 
-    /* fsid is 64 bits, but in unfsd, we treat st_dev and fsid as
-       equal, and "dev" in our filehandles are only 32 bits. So, we
-       leave the upper 32 bits all zero. The 32:th bit is set to one
-       on all special filehandles. The last 31 bits are hashed from
-       the export point path. */
-
+    /* The 32:th bit is set to one on all special filehandles. The
+       last 31 bits are hashed from the export point path. */
     hval = fnv1a_32(path);
     hval |= 0x10000000UL;
     return hval;
@@ -598,7 +594,7 @@ uint32 export_password_hash = 0;
  * given a path, return client's effective options
  */
 int exports_options(const char *path, struct svc_req *rqstp,
-		    char **password, uint64 *fsid)
+		    char **password, uint32 *fsid)
 {
 	e_item *list;
 	struct in_addr remote;
@@ -659,7 +655,7 @@ int export_point(const char *path)
 /*
  * return exported path from static fsid
  */
-char *export_point_from_fsid(uint64 fsid)
+char *export_point_from_fsid(uint32 fsid)
 {
     e_item *list;
     
