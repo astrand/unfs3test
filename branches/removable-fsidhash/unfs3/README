@@ -67,17 +67,18 @@ knows which files depend on each other and recompiles all the
 necessary files on changes.
 
 
-CREDITS
-=======
+CVS REPOSITORY
+==============
 
-The design of unfs3's filehandle code owes much to the original NFSv2
-universal user-space NFS server. Thanks to Mark Shand and Don Becker
-for coming up with those concepts.
+The unfs3 CVS repository is accessible via anonymous CVS. The source
+can be checked out with:
 
-People who contributed ideas, suggestions, or code to UNFS3:
+  cvs -d:pserver:anonymous@cvs.lysator.liu.se:/cvsroot/unfs3 login
+  cvs -d:pserver:anonymous@cvs.lysator.liu.se:/cvsroot/unfs3 co unfs3
 
-- Bernd Schubert <bernd-schubert@web.de>
-- Avery Pennarun <apenwarr@nit.ca>
-- Juergen Brendel <juergen@brendel.com>
-- Peter Astrand <peter@cendio.se>
-- Igor Durdanovic <idurdanovic@comcast.net>
+You can also use the web-based CVS repository viewer at: 
+
+  http://cvs.lysator.liu.se/viewcvs/viewcvs.cgi/?cvsroot=unfs3
+
+In the HEAD branch, you will find a file called "BRANCHES", which
+describes the different branches in this repository. 
