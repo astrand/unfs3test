@@ -104,7 +104,10 @@ serviced.
 Do not register with the portmapper. This will prevent other hosts from
 finding out the port numbers used for the MOUNT and NFS services by
 querying the portmap daemon. Clients
-will need to manually specify the port numbers to use.
+will need to manually specify the port numbers to use (on Linux clients,
+use the
+.BR mountport " and " port
+mount options).
 .TP
 .B \-w
 Allow the built-in file descriptor cache to expire writers. For
@@ -252,10 +255,7 @@ Consider this directory to be on a removable medium. When this option
 is present,
 .B unfsd
 will not keep files open across multiple read or write requests. This
-allows unmounting of the underlying filesystem at any
-time. Additionally, a static file system and file identifier will be
-used for the export point. This means that the the media can be mounted
-and unmounted without needing to remount the export. 
+allows unmounting of the underlying filesystem on the server at any time.
 .TP
 .B fixed
 Consider this directory to be on a fixed medium. This options is enabled
@@ -265,9 +265,10 @@ to keep files open between multiple read or write requests.
 .TP
 .B password=<password>
 To be able to mount this export, the specified password is
-required. The password should be given as a part of the path to mount,
+required. The password needs be given in the mount request,
 as in "mount yourhost:@password:gazonk/tmp /mnt". One time passwords
-are also supported. See the file "passwords.txt" for more information.
+are also supported. See the file "doc/passwords.txt" in the source
+for more information.
 .PP
 If options not present on this list are encountered by
 .BR unfsd ,
@@ -276,11 +277,11 @@ they are silently ignored.
 There are a few possible race conditions with other processes on the
 server. They can happen if
 .B unfsd
-is performing an operation on a directory while another
-process is simultaneously first (a) removing the directory and then (b)
-creating a new directory of the same name. If this happens,
+is performing an operation on a filesystem object while another
+process is simultaneously first (a) removing the object and then (b)
+creating a new object of the same name. If this happens,
 .B unfsd
-will attempt to perform the operation on the wrong, new directory.
+will attempt to perform the operation on the wrong, new object.
 The time window in which this can happen is small.
 .SH FILES
 .TP 20
