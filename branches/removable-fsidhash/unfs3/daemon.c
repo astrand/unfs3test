@@ -94,11 +94,14 @@ struct in_addr get_remote(struct svc_req *rqstp)
 static void parse_options(int argc, char **argv)
 {
     int opt = 0;
-    char *optstring = "cC:de:fhm:n:pstuw";
+    char *optstring = "bcC:de:hm:n:pstuw";
 
     while (opt != -1) {
 	opt = getopt(argc, argv, optstring);
 	switch (opt) {
+	    case 'b':
+		opt_brute_force = TRUE;
+		break;
 #ifdef WANT_CLUSTER
 	    case 'c':
 		opt_cluster = TRUE;
@@ -118,9 +121,6 @@ static void parse_options(int argc, char **argv)
 		}
 		opt_exports = optarg;
 		break;
-	    case 'f':
-		opt_brute_force = TRUE;
-		break;
 	    case 'h':
 		printf(UNFS_NAME);
 		printf("Usage: %s [options]\n", argv[0]);
@@ -139,8 +139,7 @@ static void parse_options(int argc, char **argv)
 		    ("\t-t          TCP only, do not listen on UDP ports\n");
 		printf("\t-p          do not register with the portmapper\n");
 		printf("\t-s          single user mode\n");
-		printf
-		    ("\t-f          do full recursive search when file not found\n");
+		printf("\t-b          enable brute force file searching\n");
 		exit(0);
 		break;
 	    case 'm':
