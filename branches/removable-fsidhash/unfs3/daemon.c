@@ -618,7 +618,7 @@ static SVCXPRT *create_udp_transport(unsigned int port)
     transp = svcudp_create(sock);
 
     if (transp == NULL) {
-	fprintf(stderr, "%s", "cannot create udp service.");
+	fprintf(stderr, "%s\n", "cannot create udp service.");
 	daemon_exit(0);
     }
 
@@ -650,7 +650,7 @@ static SVCXPRT *create_tcp_transport(unsigned int port)
     transp = svctcp_create(sock, 0, 0);
 
     if (transp == NULL) {
-	fprintf(stderr, "%s", "cannot create tcp service.");
+	fprintf(stderr, "%s\n", "cannot create tcp service.");
 	daemon_exit(0);
     }
 
