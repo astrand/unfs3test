@@ -135,19 +135,16 @@ int nfh_valid(nfs_fh3 fh)
  */
 int fh_valid(unfs3_fh_t fh)
 {
-    /* invalid filehandles have zero device and inode */
-    return (int) (fh.dev != 0 && fh.ino != 0);
+    return fh.len != 0xff;
 }
 
 /*
  * invalid fh for error returns
  */
-static const unfs3_fh_t invalid_fh = {.dev = 0,.ino = 0,.gen = 0,.len =
-	0,.inos = {0}
-};
+static const unfs3_fh_t invalid_fh = {.len = 0xff };
 
 /*
- * compose a filehandle for a given path
+ * compose a (dev-ino-hash) filehandle for a given path
  * path:     path to compose fh for
  * need_dir: if not 0, path must point to a directory
  */
@@ -168,10 +165,11 @@ unfs3_fh_t fh_comp_raw(const char *path, int need_dir)
     if (need_dir != 0 && !S_ISDIR(buf.st_mode))
 	return invalid_fh;
 
-    fh.dev = buf.st_dev;
-    fh.ino = buf.st_ino;
+    fh.flags = 0;
     fh.len = 0;
-    fh.gen = get_gen(buf, FD_NONE, path);
+    fh.dih.dev = buf.st_dev;
+    fh.dih.ino = buf.st_ino;
+    fh.dih.gen = get_gen(buf, FD_NONE, path);
 
     /* special case for root directory */
     if (strcmp(path, "/") == 0)
@@ -192,7 +190,7 @@ unfs3_fh_t fh_comp_raw(const char *path, int need_dir)
 	}
 
 	/* store 8 bit hash of the component's inode */
-	fh.inos[pos] = FH_HASH(buf.st_ino);
+	fh.dih.inos[pos] = FH_HASH(buf.st_ino);
 	pos++;
 
     } while (last && pos < FH_MAXLEN);
@@ -206,13 +204,53 @@ unfs3_fh_t fh_comp_raw(const char *path, int need_dir)
 }
 
 /*
+ * Make a zero-terminated string from ascii filehandle
+ */
+char *fh_get_ascii_path(unfs3_fh_t * fh)
+{
+    char *path;
+
+    path = malloc(fh->len + 1);
+    strncpy(path, fh->path, fh->len);
+    path[fh->len] = '\0';
+
+    return path;
+}
+
+/*
+ * compose an ascii filehandle for a path
+ */
+unfs3_fh_t fh_comp_ascii(const char *path, int need_dir)
+{
+    unfs3_fh_t res;
+
+    /* FIXME: Check limits */
+
+    res.flags = FHTYPE_ASCII_PATH;
+    res.len = strlen(path);
+    strncpy(res.path, path, NFS3_FHSIZE - 2);
+
+    return res;
+}
+
+/*
  * get real length of a filehandle
  */
 u_int fh_len(const unfs3_fh_t * fh)
 {
-    return fh->len + sizeof(fh->len) + sizeof(fh->dev) + sizeof(fh->ino) +
-	sizeof(fh->gen);
+    if (fh->flags & FHTYPE_ASCII_PATH) {
+	return sizeof(fh->flags) + sizeof(fh->len) + fh->len;
+    } else {
+	return sizeof(fh->flags) + sizeof(fh->dih.dev)
+	    + sizeof(fh->dih.ino) + sizeof(fh->dih.gen)
+	    + sizeof(fh->len) + fh->len;
+    }
+
+    return 0;
 }
+
+// FIXME
+unfs3_fh_t fh_comp(const char *path, int need_dir);
 
 /*
  * extend a filehandle with a given device, inode, and generation number
@@ -225,12 +263,17 @@ unfs3_fh_t *fh_extend(nfs_fh3 nfh, uint32 dev, uint32 ino, uint32 gen)
     if (fh->len == FH_MAXLEN)
 	return NULL;
 
-    memcpy(&new, fh, fh_len(fh));
+    /* Make sure this is dev-ino-hash FH */
+    if (fh->flags & FHTYPE_ASCII_PATH) {
+	new = fh_comp(fh_get_ascii_path(fh), FH_ANY);
+    } else {
+	memcpy(&new, fh, fh_len(fh));
+    }
 
-    new.dev = dev;
-    new.ino = ino;
-    new.gen = gen;
-    new.inos[new.len] = FH_HASH(ino);
+    new.dih.dev = dev;
+    new.dih.ino = ino;
+    new.dih.gen = gen;
+    new.dih.inos[new.len] = FH_HASH(ino);
     new.len++;
 
     return &new;
@@ -337,7 +380,7 @@ static int fh_rec(const unfs3_fh_t * fh, int pos, const char *lead,
 		buf.st_ino = 0;
 	    }
 
-	    if (buf.st_dev == fh->dev && buf.st_ino == fh->ino) {
+	    if (buf.st_dev == fh->dih.dev && buf.st_ino == fh->dih.ino) {
 		/* found the object */
 		closedir(search);
 		sprintf(result, "%s/%s", lead + 1, entry->d_name);
@@ -349,7 +392,7 @@ static int fh_rec(const unfs3_fh_t * fh, int pos, const char *lead,
 
 	    if (strcmp(entry->d_name, "..") != 0 &&
 		strcmp(entry->d_name, ".") != 0 &&
-		FH_HASH(buf.st_ino) == fh->inos[pos]) {
+		FH_HASH(buf.st_ino) == fh->dih.inos[pos]) {
 		/* 
 		 * might be directory we're looking for,
 		 * try descending into it
