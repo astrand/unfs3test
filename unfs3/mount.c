@@ -160,8 +160,7 @@ mountres3 *mountproc_mnt_3_svc(dirpath * argp, struct svc_req * rqstp)
 	char pw[PASSWORD_MAXLEN + 1];
 
 	mnt_cmd_argument(&dpath, "@password:", pw, PASSWORD_MAXLEN);
-	if ((exports_opts =
-	     exports_options(dpath, rqstp, &password, NULL)) != -1) {
+	if (exports_options(dpath, rqstp, &password, NULL) != -1) {
 	    authenticated = !strcmp(password, pw);
 	}
 	/* else leave authenticated unchanged */
@@ -173,8 +172,7 @@ mountres3 *mountproc_mnt_3_svc(dirpath * argp, struct svc_req * rqstp)
 	unsigned char hexdigest[32];
 
 	mnt_cmd_argument(&dpath, "@otp:", otp, PASSWORD_MAXLEN);
-	if ((exports_opts =
-	     exports_options(buf, rqstp, &password, NULL)) != -1) {
+	if (exports_options(dpath, rqstp, &password, NULL) != -1) {
 	    otp_digest(nonce, password, hexdigest);
 
 	    /* Compare our calculated digest with what the client submitted */
