@@ -103,7 +103,7 @@ pre_op_attr get_pre_cached(void)
 /*
  * compute post-operation attributes given a stat buffer
  */
-post_op_attr get_post_buf(struct stat buf)
+post_op_attr get_post_buf(struct stat buf, struct svc_req * req)
 {
     post_op_attr result;
 
@@ -137,14 +137,22 @@ post_op_attr get_post_buf(struct stat buf)
 
     /* If -s, translate uids */
     if (opt_singleuser) {
+	unsigned int req_uid = 0;
+	unsigned int req_gid = 0;
+	struct authunix_parms *auth = (void *) req->rq_clntcred;
+
+	if (req->rq_cred.oa_flavor == AUTH_UNIX) {
+	    req_uid = auth->aup_uid;
+	    req_gid = auth->aup_gid;
+	}
 	if (buf.st_uid == getuid())
-	    result.post_op_attr_u.attributes.uid = opt_translated_user_uid;
+	    result.post_op_attr_u.attributes.uid = req_uid;
 	else
-	    result.post_op_attr_u.attributes.uid = opt_translated_nobody_uid;
+	    result.post_op_attr_u.attributes.uid = 0;
 	if (buf.st_gid == getgid())
-	    result.post_op_attr_u.attributes.gid = opt_translated_user_gid;
+	    result.post_op_attr_u.attributes.gid = req_gid;
 	else
-	    result.post_op_attr_u.attributes.gid = opt_translated_nobody_gid;
+	    result.post_op_attr_u.attributes.gid = 0;
     } else {
 	/* Normal case */
 	result.post_op_attr_u.attributes.uid = buf.st_uid;
@@ -172,7 +180,8 @@ post_op_attr get_post_buf(struct stat buf)
 /*
  * lowlevel routine for getting post-operation attributes
  */
-static post_op_attr get_post_ll(const char *path, uint32 dev, uint32 ino)
+static post_op_attr get_post_ll(const char *path, uint32 dev, uint32 ino,
+				struct svc_req *req)
 {
     struct stat buf;
     int res;
@@ -188,25 +197,26 @@ static post_op_attr get_post_ll(const char *path, uint32 dev, uint32 ino)
     if (dev != buf.st_dev || ino != buf.st_ino)
 	return error_attr();
 
-    return get_post_buf(buf);
+    return get_post_buf(buf, req);
 }
 
 /*
  * return post-operation attributes, using fh for old dev/ino
  */
-post_op_attr get_post_attr(const char *path, nfs_fh3 nfh)
+post_op_attr get_post_attr(const char *path, nfs_fh3 nfh,
+			   struct svc_req * req)
 {
     unfs3_fh_t *fh = (void *) nfh.data.data_val;
 
-    return get_post_ll(path, fh->dev, fh->ino);
+    return get_post_ll(path, fh->dev, fh->ino, req);
 }
 
 /*
  * return post-operation attributes, using stat cache for old dev/ino
  */
-post_op_attr get_post_stat(const char *path)
+post_op_attr get_post_stat(const char *path, struct svc_req * req)
 {
-    return get_post_ll(path, st_cache.st_dev, st_cache.st_ino);
+    return get_post_ll(path, st_cache.st_dev, st_cache.st_ino, req);
 }
 
 /*
@@ -214,12 +224,12 @@ post_op_attr get_post_stat(const char *path)
  *
  * fd_decomp must be called before to fill the stat cache
  */
-post_op_attr get_post_cached(void)
+post_op_attr get_post_cached(struct svc_req * req)
 {
     if (!st_cache_valid)
 	return error_attr();
 
-    return get_post_buf(st_cache);
+    return get_post_buf(st_cache, req);
 }
 
 /*

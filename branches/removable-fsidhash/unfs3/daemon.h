@@ -27,9 +27,5 @@ extern char	*opt_exports;
 extern int	opt_cluster;
 extern char	*opt_cluster_path;
 extern int opt_singleuser;
-extern unsigned int opt_translated_user_uid;
-extern unsigned int opt_translated_nobody_uid;
-extern unsigned int opt_translated_user_gid;
-extern unsigned int opt_translated_nobody_gid;
 
 #endif
