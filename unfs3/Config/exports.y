@@ -667,8 +667,10 @@ char *export_point_from_fsid(uint64 fsid)
     list = export_list;
     
     while (list) {
-	if (list->fsid == fsid)
+	if (list->fsid == fsid) {
+	    exports_access = FALSE;
 	    return list->path;
+	}
 	list = (e_item *) list->next;
     }
     exports_access = FALSE;
