@@ -21,6 +21,7 @@
 #include "locate.h"
 #include "fh_cache.h"
 #include "mount.h"
+#include "daemon.h"
 #include "Config/exports.h"
 
 /* number of entries in fh cache */
@@ -247,7 +248,7 @@ char *fh_decomp(nfs_fh3 fh)
 	result = fh_decomp_raw(obj);
 
 	/* if still not found, do full recursive search) */
-	if (!result)
+	if (!result && opt_fullsearch)
 	    result = locate_file(obj->dev, obj->ino);
 
 	if (result)
