@@ -252,7 +252,10 @@ Consider this directory to be on a removable medium. When this option
 is present,
 .B unfsd
 will not keep files open across multiple read or write requests. This
-allows unmounting of the underlying filesystem at any time.
+allows unmounting of the underlying filesystem at any
+time. Additionally, a static file system and file identifier will be
+used for the export point. This means that the the media can be mounted
+and unmounted without needing to remount the export. 
 .TP
 .B fixed
 Consider this directory to be on a fixed medium. This options is enabled
